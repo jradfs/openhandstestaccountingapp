@@ -76,6 +76,10 @@ class Task(db.Model):
     status = db.Column(db.String(20), default='pending')
     assigned_to = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Add relationships
+    client = db.relationship('Client', backref='tasks', lazy=True)
+    assignee = db.relationship('User', backref='assigned_tasks', lazy=True, foreign_keys=[assigned_to])
 
 class AuditLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -1,0 +1,11 @@
+date,description,amount,category,account
+2024-01-15,Monthly rent payment,-2500.00,expense,Rent Expense
+2024-01-16,Client payment received,5000.00,revenue,Service Revenue
+2024-01-17,Office supplies purchase,-150.25,expense,Office Supplies Expense
+2024-01-18,Utility bill payment,-300.00,expense,Utilities Expense
+2024-01-19,Consulting services,7500.00,revenue,Service Revenue
+2024-01-20,Software subscription,-99.99,expense,Office Supplies Expense
+2024-01-21,Equipment purchase,-1200.00,expense,Fixed Assets
+2024-01-22,Client retainer,3000.00,revenue,Service Revenue
+2024-01-23,Insurance premium,-450.00,expense,Insurance Expense
+2024-01-24,Bank fees,-25.00,expense,Bank Charges

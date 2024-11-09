@@ -11,6 +11,10 @@ def create_app(config_name='default'):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     
+    # Ensure instance and upload folders exist
+    os.makedirs(os.path.dirname(app.config['SQLALCHEMY_DATABASE_URI'].replace('sqlite:///', '')), exist_ok=True)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    
     # Initialize extensions
     db.init_app(app)
     login_manager = LoginManager()

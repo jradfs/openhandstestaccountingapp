@@ -1,57 +1,69 @@
-from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
-from datetime import datetime
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import LoginManager, login_required, current_user, login_user, logout_user
+from werkzeug.utils import secure_filename
+from datetime import datetime, timedelta
+import os
+from models import db, User, Client, Transaction, Account, FinancialStatement, Task, AuditLog
+from utils.accounting import TransactionProcessor, FinancialStatementGenerator, AIAccountingAssistant
+from config import config
 
-app = Flask(__name__)
-
-def init_db():
-    conn = sqlite3.connect('accounting_tasks.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS tasks
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  title TEXT NOT NULL,
-                  category TEXT NOT NULL,
-                  due_date DATE,
-                  priority TEXT,
-                  status TEXT DEFAULT 'pending',
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
-
-@app.route('/')
-def index():
-    conn = sqlite3.connect('accounting_tasks.db')
-    c = conn.cursor()
-    c.execute('SELECT * FROM tasks ORDER BY due_date ASC')
-    tasks = c.fetchall()
-    conn.close()
-    return render_template('index.html', tasks=tasks)
-
-@app.route('/add', methods=['POST'])
-def add_task():
-    title = request.form['title']
-    category = request.form['category']
-    due_date = request.form['due_date']
-    priority = request.form['priority']
+def create_app(config_name='default'):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
     
-    conn = sqlite3.connect('accounting_tasks.db')
-    c = conn.cursor()
-    c.execute('INSERT INTO tasks (title, category, due_date, priority) VALUES (?, ?, ?, ?)',
-              (title, category, due_date, priority))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('index'))
-
-@app.route('/update/<int:id>', methods=['POST'])
-def update_status(id):
-    status = request.form['status']
-    conn = sqlite3.connect('accounting_tasks.db')
-    c = conn.cursor()
-    c.execute('UPDATE tasks SET status = ? WHERE id = ?', (status, id))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('index'))
+    # Initialize extensions
+    db.init_app(app)
+    login_manager = LoginManager()
+    login_manager.login_view = 'auth.login'
+    login_manager.init_app(app)
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+    
+    # Register blueprints
+    from routes.auth import auth as auth_blueprint
+    app.register_blueprint(auth_blueprint)
+    
+    from routes.dashboard import dashboard as dashboard_blueprint
+    app.register_blueprint(dashboard_blueprint)
+    
+    from routes.clients import clients as clients_blueprint
+    app.register_blueprint(clients_blueprint)
+    
+    from routes.transactions import transactions as transactions_blueprint
+    app.register_blueprint(transactions_blueprint)
+    
+    from routes.reports import reports as reports_blueprint
+    app.register_blueprint(reports_blueprint)
+    
+    from routes.tasks import tasks as tasks_blueprint
+    app.register_blueprint(tasks_blueprint)
+    
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        
+        # Create admin user if not exists
+        if not User.query.filter_by(email='admin@example.com').first():
+            admin = User(
+                email='admin@example.com',
+                name='Admin User',
+                role='admin'
+            )
+            admin.set_password('admin123')  # Change this in production
+            db.session.add(admin)
+            db.session.commit()
+    
+    @app.context_processor
+    def utility_processor():
+        def format_currency(amount):
+            return "${:,.2f}".format(amount)
+        
+        return dict(format_currency=format_currency)
+    
+    return app
 
 if __name__ == '__main__':
-    init_db()
+    app = create_app()
     app.run(debug=True, host='0.0.0.0', port=3000)

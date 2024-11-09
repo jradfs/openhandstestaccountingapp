@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounting Tasks Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .task-form {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .task-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .task-list th, .task-list td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .task-list th {
+            background-color: #f0f0f0;
+        }
+        .priority-high { color: red; }
+        .priority-medium { color: orange; }
+        .priority-low { color: green; }
+        .status-completed { background-color: #e8f5e9; }
+        .status-pending { background-color: #fff3e0; }
+    </style>
+</head>
+<body>
+    <h1>Accounting Tasks Manager</h1>
+    
+    <div class="task-form">
+        <h2>Add New Task</h2>
+        <form action="{{ url_for('add_task') }}" method="post">
+            <div>
+                <label for="title">Task Title:</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div>
+                <label for="category">Category:</label>
+                <select id="category" name="category" required>
+                    <option value="invoicing">Invoicing</option>
+                    <option value="payroll">Payroll</option>
+                    <option value="taxes">Taxes</option>
+                    <option value="reconciliation">Bank Reconciliation</option>
+                    <option value="reporting">Financial Reporting</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div>
+                <label for="due_date">Due Date:</label>
+                <input type="date" id="due_date" name="due_date" required>
+            </div>
+            <div>
+                <label for="priority">Priority:</label>
+                <select id="priority" name="priority" required>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <button type="submit">Add Task</button>
+        </form>
+    </div>
+
+    <h2>Tasks List</h2>
+    <table class="task-list">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Due Date</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for task in tasks %}
+            <tr class="status-{{ task[5] }}">
+                <td>{{ task[1] }}</td>
+                <td>{{ task[2] }}</td>
+                <td>{{ task[3] }}</td>
+                <td class="priority-{{ task[4] }}">{{ task[4].title() }}</td>
+                <td>{{ task[5].title() }}</td>
+                <td>
+                    <form action="{{ url_for('update_status', id=task[0]) }}" method="post" style="display: inline;">
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="pending" {% if task[5] == 'pending' %}selected{% endif %}>Pending</option>
+                            <option value="completed" {% if task[5] == 'completed' %}selected{% endif %}>Completed</option>
+                        </select>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -22,23 +22,26 @@ def create_app(config_name='default'):
         return User.query.get(int(user_id))
     
     # Register blueprints
-    from routes.auth import auth as auth_blueprint
-    app.register_blueprint(auth_blueprint)
-    
-    from routes.dashboard import dashboard as dashboard_blueprint
-    app.register_blueprint(dashboard_blueprint)
-    
-    from routes.clients import clients as clients_blueprint
-    app.register_blueprint(clients_blueprint)
-    
-    from routes.transactions import transactions as transactions_blueprint
-    app.register_blueprint(transactions_blueprint)
-    
-    from routes.reports import reports as reports_blueprint
-    app.register_blueprint(reports_blueprint)
-    
-    from routes.tasks import tasks as tasks_blueprint
-    app.register_blueprint(tasks_blueprint)
+    try:
+        from routes.auth import auth as auth_blueprint
+        app.register_blueprint(auth_blueprint)
+        
+        from routes.dashboard import dashboard as dashboard_blueprint
+        app.register_blueprint(dashboard_blueprint)
+        
+        from routes.clients import clients as clients_blueprint
+        app.register_blueprint(clients_blueprint)
+        
+        from routes.transactions import transactions as transactions_blueprint
+        app.register_blueprint(transactions_blueprint)
+        
+        from routes.reports import reports as reports_blueprint
+        app.register_blueprint(reports_blueprint)
+        
+        from routes.tasks import tasks as tasks_blueprint
+        app.register_blueprint(tasks_blueprint)
+    except ImportError as e:
+        print(f"Warning: Some routes could not be imported: {e}")
     
     # Create database tables
     with app.app_context():

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 from typing import List, Dict, Any
-from ..models import Transaction, Account, FinancialStatement
+from models import Transaction, Account, FinancialStatement
 
 class TransactionProcessor:
     @staticmethod

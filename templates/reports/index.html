@@ -1,0 +1,215 @@
+{% extends "dashboard/index.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h2">Financial Reports</h1>
+        </div>
+    </div>
+
+    <!-- Report Generator -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="reportForm" action="{{ url_for('reports.generate') }}" method="post">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="client_id" class="form-label">Client</label>
+                        <select class="form-select" id="client_id" name="client_id" required>
+                            <option value="">Select Client</option>
+                            {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.business_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="type" class="form-label">Report Type</label>
+                        <select class="form-select" id="type" name="type" required>
+                            <option value="">Select Type</option>
+                            <option value="income_statement">Income Statement</option>
+                            <option value="balance_sheet">Balance Sheet</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Report Results -->
+    <div id="reportResults" style="display: none;">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Report Results</h5>
+                <button type="button" class="btn btn-outline-primary" onclick="exportReport()">
+                    <i class="bx bx-download"></i> Export
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Income Statement -->
+                <div id="incomeStatement" style="display: none;">
+                    <h3 class="text-center mb-4">Income Statement</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4>Revenue</h4>
+                            <div id="revenueItems"></div>
+                            <hr>
+                            <h5>Total Revenue: <span id="totalRevenue"></span></h5>
+                        </div>
+                        <div class="col-md-6">
+                            <h4>Expenses</h4>
+                            <div id="expenseItems"></div>
+                            <hr>
+                            <h5>Total Expenses: <span id="totalExpenses"></span></h5>
+                        </div>
+                    </div>
+                    <hr>
+                    <h4 class="text-center">Net Income: <span id="netIncome"></span></h4>
+                </div>
+
+                <!-- Balance Sheet -->
+                <div id="balanceSheet" style="display: none;">
+                    <h3 class="text-center mb-4">Balance Sheet</h3>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h4>Assets</h4>
+                            <div id="assetItems"></div>
+                            <hr>
+                            <h5>Total Assets: <span id="totalAssets"></span></h5>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>Liabilities</h4>
+                            <div id="liabilityItems"></div>
+                            <hr>
+                            <h5>Total Liabilities: <span id="totalLiabilities"></span></h5>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>Equity</h4>
+                            <div id="equityItems"></div>
+                            <hr>
+                            <h5>Total Equity: <span id="totalEquity"></span></h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.getElementById('reportForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        
+        document.getElementById('reportResults').style.display = 'block';
+        const reportType = document.getElementById('type').value;
+        
+        if (reportType === 'income_statement') {
+            displayIncomeStatement(data.data);
+        } else if (reportType === 'balance_sheet') {
+            displayBalanceSheet(data.data);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while generating the report');
+    });
+});
+
+function displayIncomeStatement(data) {
+    document.getElementById('incomeStatement').style.display = 'block';
+    document.getElementById('balanceSheet').style.display = 'none';
+    
+    // Display revenue items
+    const revenueItems = document.getElementById('revenueItems');
+    revenueItems.innerHTML = Object.entries(data.details.revenue_items)
+        .map(([account, amount]) => `<div class="d-flex justify-content-between">
+            <span>${account}</span>
+            <span>${formatCurrency(amount)}</span>
+        </div>`).join('');
+    
+    // Display expense items
+    const expenseItems = document.getElementById('expenseItems');
+    expenseItems.innerHTML = Object.entries(data.details.expense_items)
+        .map(([account, amount]) => `<div class="d-flex justify-content-between">
+            <span>${account}</span>
+            <span>${formatCurrency(amount)}</span>
+        </div>`).join('');
+    
+    // Display totals
+    document.getElementById('totalRevenue').textContent = formatCurrency(data.revenue);
+    document.getElementById('totalExpenses').textContent = formatCurrency(data.expenses);
+    document.getElementById('netIncome').textContent = formatCurrency(data.net_income);
+}
+
+function displayBalanceSheet(data) {
+    document.getElementById('balanceSheet').style.display = 'block';
+    document.getElementById('incomeStatement').style.display = 'none';
+    
+    // Display assets
+    const assetItems = document.getElementById('assetItems');
+    assetItems.innerHTML = Object.entries(data.details.assets)
+        .map(([account, amount]) => `<div class="d-flex justify-content-between">
+            <span>${account}</span>
+            <span>${formatCurrency(amount)}</span>
+        </div>`).join('');
+    
+    // Display liabilities
+    const liabilityItems = document.getElementById('liabilityItems');
+    liabilityItems.innerHTML = Object.entries(data.details.liabilities)
+        .map(([account, amount]) => `<div class="d-flex justify-content-between">
+            <span>${account}</span>
+            <span>${formatCurrency(amount)}</span>
+        </div>`).join('');
+    
+    // Display equity
+    const equityItems = document.getElementById('equityItems');
+    equityItems.innerHTML = Object.entries(data.details.equity)
+        .map(([account, amount]) => `<div class="d-flex justify-content-between">
+            <span>${account}</span>
+            <span>${formatCurrency(amount)}</span>
+        </div>`).join('');
+    
+    // Display totals
+    document.getElementById('totalAssets').textContent = formatCurrency(data.assets);
+    document.getElementById('totalLiabilities').textContent = formatCurrency(data.liabilities);
+    document.getElementById('totalEquity').textContent = formatCurrency(data.equity);
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(amount);
+}
+
+function exportReport() {
+    const clientId = document.getElementById('client_id').value;
+    const reportId = document.getElementById('reportResults').dataset.reportId;
+    window.location.href = `/reports/${reportId}/export`;
+}
+</script>
+{% endblock %}
+{% endblock %}
